@@ -51,8 +51,13 @@ router.get('/examples', requireToken, (req, res, next) => {
 // SHOW
 // GET /examples/5a7db6c74d55bc51bdf39793
 router.get('/examples/:id', requireToken, (req, res, next) => {
+  // req.params is an object containing a key for each dynamic segment in the
+  // URL, e.g. `:id`
   Example.findById(req.params.id)
+  // pass of the results of that query to `handle404` whixh will send back 404
+  // if we didn't find anything
     .then(handle404)
+    // send the found document back to the user, in an object with key example
     .then(example => res.status(200).json({ example: example.toObject() }))
     .catch(next)
 })
