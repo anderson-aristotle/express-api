@@ -1,26 +1,50 @@
+// requiring NPM (node modules) packages
 const express = require('express')
 const passport = require('passport')
 
+// require the relevant model
+// model will give us the method we need to interact with the server
 const Example = require('../models/example')
 
+// error handling helper functions
 const customErrors = require('../../lib/custom_errors')
 
+// this function will be passed to `.then` after a DB query and will return a
+// 404 status code if nothing was found
 const handle404 = customErrors.handle404
+// a function that we pass `req` and a resource from the DB to, and find out
+// if the current user owns that resource
 const requireOwnership = customErrors.requireOwnership
 
+// this is a helper function for `update` which prevents overwriting data
+// with empty string
 const removeBlanks = require('../../lib/remove_blank_fields')
+
+// this is middleware that aborts the route handler and sends back a 401
+// staus code if the request didnt have a valid token, otherwise it sets req.user
 const requireToken = passport.authenticate('bearer', { session: false })
 
+// creates a router object that we attach routes to, then export over to
+// server.js, where we attach all those routes onto our main `app` object
 const router = express.Router()
 
 // INDEX
 // GET /examples
+// attach a route for `GET` requests to `/examples`, pass `requireToken`
+// special attention to TOKEN
+// `next` is an error handler store
 router.get('/examples', requireToken, (req, res, next) => {
-  Example.find()
+// use mongoose example Model to search for ALL examples
+  Example.find({ owner: req.user._id })
+  // iterate over whatever we got from `.find` and convert to POJOs
     .then(examples => {
+      // set status to 200, send back JSON with key `examples` whose value is
+      // the array of examples POJOs
       return examples.map(example => example.toObject())
     })
     .then(examples => res.status(200).json({ examples: examples }))
+    // if anything in this promise chain triggered an error, pass it off to
+    // error handling middleware
     .catch(next)
 })
 
